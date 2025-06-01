@@ -20,6 +20,10 @@ app.post('/api/chat', async (req, res) => {
   try {
     const { messages } = req.body;
     
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error('OPENAI_API_KEY is not set in environment variables');
+    }
+
     const completion = await openai.chat.completions.create({
       model: "gpt-3.5-turbo",
       messages: messages,
@@ -28,12 +32,22 @@ app.post('/api/chat', async (req, res) => {
 
     res.json({ message: completion.choices[0].message.content });
   } catch (error) {
-    console.error('Error:', error);
-    res.status(500).json({ error: 'Failed to get response from OpenAI' });
+    console.error('Detailed error:', {
+      message: error.message,
+      stack: error.stack,
+      response: error.response?.data
+    });
+    
+    res.status(500).json({ 
+      error: 'Failed to get response from OpenAI',
+      details: error.message,
+      type: error.name
+    });
   }
 });
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
+  console.log('OpenAI API Key status:', process.env.OPENAI_API_KEY ? 'Present' : 'Missing');
 }); 

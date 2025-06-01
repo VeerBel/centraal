@@ -63,24 +63,30 @@ function App() {
         }),
       });
 
-      if (!response.ok) {
-        throw new Error('Network response was not ok');
+      let errorData;
+      try {
+        errorData = await response.json();
+      } catch (e) {
+        // If we can't parse JSON, it's likely a server connection issue
+        throw new Error('Unable to connect to the chat server. Please make sure the server is running on port 3001.');
       }
 
-      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(errorData.details || 'Network response was not ok');
+      }
       
       // Add assistant's response to chat history
       const assistantMessage = {
         role: 'assistant',
-        content: data.message
+        content: errorData.message
       };
       setChatHistory(prev => [...prev, assistantMessage]);
     } catch (error) {
-      console.error('Error:', error);
-      // Add error message to chat history
+      console.error('Error details:', error);
+      // Add error message to chat history with more details
       setChatHistory(prev => [...prev, {
         role: 'assistant',
-        content: 'Sorry, I encountered an error. Please try again.'
+        content: `Error: ${error.message}. Please check the console for more details.`
       }]);
     } finally {
       setIsLoading(false);
